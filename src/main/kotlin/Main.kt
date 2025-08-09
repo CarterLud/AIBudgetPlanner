@@ -1,4 +1,6 @@
+import DBHandler.DBConn
 import Handler.StatementHandler
+import Storage.Transactions
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -7,14 +9,13 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
+import Storage.Transactions.TransactionRepository.getAllTransactions
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import java.io.File
 
 fun main() {
+    DBConn().connect(false)
     embeddedServer(Netty, port = 8080, module = Application::module).start(wait = true)
 }
 
@@ -28,11 +29,7 @@ fun Application.module() {
 
 
     routing {
-        get("/") {
-            call.respondText("✅ Server is running")
-        }
-
-        post("/upload") {
+        post("/upload_statement") {
             try {
                 val multipart = call.receiveMultipart()
                 val response = StatementHandler().execute(multipart)
@@ -48,5 +45,13 @@ fun Application.module() {
             }
         }
 
+        post("/upload_divider") {
+            val name = call.receiveParameters()["name"]
+            val description = call.receiveParameters()["description"]
+        }
+
+        get("/test") {
+            call.respond(HttpStatusCode.OK, getAllTransactions())
+        }
     }
 }

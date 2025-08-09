@@ -3,7 +3,7 @@ package Handler
 class BudgetTypeHandler {
 
 
-    fun execute(budgetType: String) {
+    fun execute(budgetType: String, description: String?) {
 
     }
 }

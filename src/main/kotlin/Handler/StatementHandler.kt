@@ -1,5 +1,7 @@
 package Handler
 
+import Storage.Transaction
+import Storage.Transactions.TransactionRepository.addTransaction
 import io.ktor.http.content.MultiPartData
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
@@ -7,6 +9,7 @@ import io.ktor.http.content.streamProvider
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import java.io.ByteArrayInputStream
+import java.io.FileNotFoundException
 
 class StatementHandler {
 
@@ -101,14 +104,12 @@ class StatementHandler {
      *
      * Example transaction format in input text: "JAN 15 JAN 15-$24.99AMAZON PRIME"
      */
-    fun splitByTransactions(cardTransactions: Map<String, List<String>>): Map<String, List<Map<String, String>>> {
-        val transactionData = mutableMapOf<String, MutableList<Map<String, String>>>()
-
+    fun splitByTransactions(cardTransactions: Map<String, List<String>>): Int {
         cardTransactions.forEach { (cardNumber, lines) ->
             lines.forEach { line ->
                 transactionRegex.findAll(line).forEach { matchResult ->
-
                     // Get the named capture groups directly
+                    val cardNumber = cardNumber.replace(" ", "").takeLast(4)
                     val startMonth = matchResult.groups["startMonth"]?.value ?: ""
                     val startDay = matchResult.groups["startDay"]?.value ?: ""
                     val endMonth = matchResult.groups["endMonth"]?.value ?: ""
@@ -116,23 +117,21 @@ class StatementHandler {
                     val amount = matchResult.groups["amount"]?.value ?: ""
                     val vendor = matchResult.groups["vendor"]?.value ?: ""
 
-                    // Create a map for this transaction
-                    val transactionMap = mapOf(
-                        "startMonth" to startMonth,
-                        "startDay" to startDay,
-                        "endMonth" to endMonth,
-                        "endDay" to endDay,
-                        "amount" to amount,
-                        "vendor" to vendor
+                    val transaction = Transaction(
+                        cardNumber,
+                        startMonth,
+                        startDay,
+                        endMonth,
+                        endDay,
+                        amount,
+                        vendor
                     )
 
-                    // Add to this card’s list
-                    transactionData.putIfAbsent(cardNumber, mutableListOf())
-                    transactionData[cardNumber]!!.add(transactionMap)
+                    addTransaction(transaction)
                 }
             }
         }
-        return transactionData
+        return 0
     }
 
     /**
@@ -160,7 +159,7 @@ class StatementHandler {
 
         statement.forEachPart { part ->
             if (part is PartData.FileItem && part.name == "file") {
-                val name = part.originalFileName ?: "uploaded.pdf"
+                val name = part.originalFileName ?: throw FileNotFoundException("File name not found")
                 val bytes = part.streamProvider().readBytes()
                 pdfText = splitByCardNumbers(extractTextFromPdf(bytes))
                 uploadedFileName = name

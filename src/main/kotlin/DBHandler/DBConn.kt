@@ -21,9 +21,12 @@ class DBConn {
                 driver = "org.sqlite.JDBC"
             )
         }
+        generateSchema()
     }
 
     fun generateSchema() {
-
+        transaction {
+            SchemaUtils.create(Transactions.Transactions)
+        }
     }
 }
