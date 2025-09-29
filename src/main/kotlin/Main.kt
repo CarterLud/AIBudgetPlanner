@@ -1,6 +1,6 @@
 import DBHandler.DBConn
+import Handler.BudgetTypeHandler
 import Handler.StatementHandler
-import Storage.Transactions
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -9,10 +9,9 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import Storage.Transactions.TransactionRepository.getAllTransactions
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.toMap
 import kotlinx.serialization.json.Json
-import java.io.File
 
 fun main() {
     DBConn().connect(false)
@@ -46,12 +45,32 @@ fun Application.module() {
         }
 
         post("/upload_divider") {
-            val name = call.receiveParameters()["name"]
-            val description = call.receiveParameters()["description"]
+            println("Received request to upload a budget divider.")
+            val params = call.receiveParameters().toMap()// consume once
+
+            val name = params["name"]?.firstOrNull()
+            val description = params["description"]?.firstOrNull()
+            val maxBudget = params["max_budget"]?.firstOrNull()?.toIntOrNull()
+
+            if (name == null || description == null) {
+                println("Invalid request body.")
+                call.respond(HttpStatusCode.BadRequest, "Invalid request body.")
+                return@post
+            }
+
+            println(params)
+
+            val response = BudgetTypeHandler().execute(name, description, maxBudget)
+
+            if (true) {
+                call.respondText("Budget divider uploaded successfully.")
+            } else {
+                call.respond(HttpStatusCode.BadRequest, "Failed to upload budget divider.")
+            }
         }
 
-        get("/test") {
-            call.respond(HttpStatusCode.OK, getAllTransactions())
-        }
+//        get("/test") {
+//            call.respond(HttpStatusCode.OK, getAllTransactions())
+//        }
     }
 }

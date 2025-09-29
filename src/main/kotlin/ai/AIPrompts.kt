@@ -1,0 +1,5 @@
+package ai
+
+class AIPrompts {
+
+}
