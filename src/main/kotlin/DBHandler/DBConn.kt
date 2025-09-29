@@ -1,9 +1,10 @@
 package DBHandler
 
-import Storage.Transactions
+import sql.Transactions
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import sql.BudgetDividers
 
 
 class DBConn {
@@ -27,6 +28,7 @@ class DBConn {
     fun generateSchema() {
         transaction {
             SchemaUtils.create(Transactions.Transactions)
+            SchemaUtils.create(BudgetDividers.BudgetDivider)
         }
     }
 }

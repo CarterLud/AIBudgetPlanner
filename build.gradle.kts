@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "1.9.0"
     kotlin("plugin.serialization") version "1.9.0"
     application
+    id("java")
 }
 
 repositories {
@@ -10,10 +11,61 @@ repositories {
 
 kotlin {
     jvmToolchain(17)
+
+    sourceSets {
+        main {
+            kotlin.srcDir("src/main/kotlin")
+        }
+        test {
+            kotlin.srcDir("src/test/kotlin")
+        }
+    }
+}
+
+// Configure the test source set
+sourceSets {
+    test {
+        java {
+            srcDirs("src/test/kotlin")
+        }
+        resources {
+            srcDirs("src/test/resources")
+        }
+    }
 }
 
 application {
     mainClass.set("MainKt")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+
+    // Ensure test source sets are properly included
+    include("**/*Test.class")
+    include("**/*Tests.class")
+}
+
+// Create a specific task for running BudgetTypeHandler tests
+tasks.register<Test>("testBudgetTypeHandler") {
+    description = "Runs BudgetTypeHandler tests"
+    group = "verification"
+
+    useJUnitPlatform()
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+    }
+
+    filter {
+        includeTestsMatching("*BudgetTypeHandler*")
+    }
 }
 
 dependencies {
@@ -38,4 +90,12 @@ dependencies {
 
     // Logging (optional)
     implementation("ch.qos.logback:logback-classic:1.4.11")
+
+    implementation("org.jetbrains.exposed:exposed-java-time:0.49.0")
+
+    // Testing
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.0")
 }
